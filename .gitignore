@@ -1,0 +1,16 @@
+# Android
+app/build/
+.gradle/
+local.properties
+*.apk
+# Python
+__pycache__/
+*.pyc
+.venv*/
+hf-cache/
+# runtime state (contains your local config + recordings)
+server/settings.json
+recordings/
+*.log
+.DS_Store
+.zcode/

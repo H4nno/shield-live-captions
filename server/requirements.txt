@@ -1,0 +1,11 @@
+# Runtime deps for the caption server. Torch is expected from the platform
+# (NGC pytorch container, or pip --index-url https://download.pytorch.org/whl/cu130
+# for aarch64 CUDA on DGX Spark).
+transformers>=5.13.0
+numpy
+scipy
+sounddevice
+httpx
+fastapi
+uvicorn[standard]
+librosa
