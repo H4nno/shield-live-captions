@@ -40,8 +40,8 @@ public class SubtitleOverlayService extends Service {
     public static final String ACTION_LANG_CYCLE = "app.shieldcc.action.LANG_CYCLE";
     public static final String EXTRA_DEMO = "demo";
 
-    private static final long LINE_TTL_MS = 2500;
-    private static final long MIN_DISPLAY_MS = 1200;
+    private static final long LINE_TTL_MS = 5000;
+    private static final long MIN_DISPLAY_MS = 2000;
     private static final int MAX_LINES = 2;
     private static final long RECONNECT_MAX_MS = 30000;
     private static final String TAG = "shieldcc";
@@ -233,9 +233,12 @@ public class SubtitleOverlayService extends Service {
             default: y = (int) (dm.heightPixels * 0.055f); break; // bottom
         }
         int width = (int) (dm.widthPixels * Math.min(Math.max(Prefs.widthPct(this), 30), 100) / 100.0);
+        float fontPx = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_SP, Prefs.fontSp(this), getResources().getDisplayMetrics());
+        int fixedHeight = (int) (fontPx * 1.45f * (MAX_LINES + 2)) + dp(28);
         WindowManager.LayoutParams p = new WindowManager.LayoutParams(
                 width,
-                WindowManager.LayoutParams.WRAP_CONTENT,
+                fixedHeight,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
@@ -275,7 +278,17 @@ public class SubtitleOverlayService extends Service {
         container.addView(finalsBox);
         container.addView(draftView);
         container.addView(partialView);
-        overlay = container;
+
+        // Fixed-height transparent root with the caption box anchored at its
+        // bottom: the window geometry never changes, so nothing jumps — new
+        // lines slide in above the old ones like broadcast subtitles.
+        android.widget.FrameLayout root = new android.widget.FrameLayout(this);
+        android.widget.FrameLayout.LayoutParams cl = new android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        root.addView(container, cl);
+        overlay = root;
         applyFontSize();
         updateVisibility();
     }
