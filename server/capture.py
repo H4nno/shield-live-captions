@@ -9,6 +9,7 @@ import logging
 import queue
 import subprocess
 import threading
+import time
 
 import numpy as np
 
@@ -123,6 +124,8 @@ class ArecordSource:
         self._proc = None
         self.thread = None
         self._rs = None
+        self._stopping = False
+        self._restarts = 0
 
     def start(self):
         from math import gcd
@@ -174,14 +177,24 @@ class ArecordSource:
                              sum(rms_acc) / len(rms_acc), int(np.max(np.abs(raw))), reads)
                     rms_acc = []
         finally:
-            log.info("arecord reader stopped after %d reads", reads)
+            log.warning("arecord reader stopped after %d reads (restart #%d)",
+                        reads, self._restarts)
             try:
                 self._proc.stdout.close()
                 self._proc.terminate()
             except Exception:
                 pass
+            # self-heal: respawn arecord unless we are shutting down on purpose
+            if not self._stopping and self._restarts < 100:
+                self._restarts += 1
+                time.sleep(2.0)
+                try:
+                    self.start()
+                except Exception:
+                    log.exception("arecord restart failed; giving up")
 
     def stop(self):
+        self._stopping = True
         if self._proc is not None:
             try:
                 self._proc.terminate()
